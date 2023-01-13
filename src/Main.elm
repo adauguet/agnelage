@@ -1,193 +1,147 @@
 module Main exposing (..)
 
+import Batch exposing (Selling(..), TuppingDuration(..), Weaning(..))
 import Browser
 import Element
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Time exposing (Posix)
 
 
 type alias Model =
-    {}
+    { name : String
+    , count : Int
+    , tuppingDuration : TuppingDuration
+    , tuppingDate : String
+    , weaning : Weaning
+    , selling : Selling
+    }
 
 
 init : Model
 init =
-    {}
+    { name = ""
+    , count = 1
+    , tuppingDuration = OneCycle
+    , tuppingDate = ""
+    , weaning = SixtyDays
+    , selling = ThreeMonths
+    }
 
 
 type Msg
     = DidInputName String
+    | DidInputCount String
+    | DidChangeTuppingDuration TuppingDuration
+    | DidInputTuppingDate String
+    | DidInputWeaning Weaning
+    | DidInputSelling Selling
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
         DidInputName name ->
+            { model | name = name }
+
+        DidInputCount countString ->
+            case String.toInt countString of
+                Just count ->
+                    { model | count = count }
+
+                Nothing ->
+                    model
+
+        DidChangeTuppingDuration tuppingDuration ->
+            { model | tuppingDuration = tuppingDuration }
+
+        DidInputTuppingDate _ ->
             model
+
+        DidInputWeaning weaning ->
+            { model | weaning = weaning }
+
+        DidInputSelling selling ->
+            { model | selling = selling }
 
 
 view : Model -> Html Msg
 view model =
-    Element.layout [ Element.padding 24 ] <|
-        Element.column []
+    Element.layout [ Element.padding 24, Font.size 16 ] <|
+        Element.column [ Element.centerX, Element.spacing 32 ]
             [ Input.text []
                 { onChange = DidInputName
-                , text = ""
+                , text = model.name
                 , placeholder = Nothing
                 , label = Input.labelAbove [] <| Element.text "Nom"
                 }
+            , Input.text [ Font.alignRight ]
+                { onChange = DidInputCount
+                , text = model.count |> String.fromInt
+                , placeholder = Nothing
+                , label = Input.labelAbove [] <| Element.text "Nombre de brebis"
+                }
+            , Element.column
+                [ Element.width Element.fill
+                , Element.paddingXY 16 16
+                , Element.spacing 32
+                , Border.width 1
+                ]
+                [ Element.text "Lutte"
+                , Input.text []
+                    { onChange = DidInputTuppingDate
+                    , text = model.tuppingDate
+                    , placeholder = Nothing
+                    , label = Input.labelAbove [] <| Element.text "Date"
+                    }
+                , Input.radioRow [ Element.spacing 24 ]
+                    { onChange = DidChangeTuppingDuration
+                    , options =
+                        [ Input.option OneCycle (Element.text "1")
+                        , Input.option OneCycleAndAHalf (Element.text "1,5")
+                        , Input.option TwoCycles (Element.text "2")
+                        , Input.option ThreeCycles (Element.text "3")
+                        ]
+                    , selected = Just model.tuppingDuration
+                    , label = Input.labelAbove [] <| Element.text "Nombre de cycles"
+                    }
+                ]
+            , Input.radioRow [ Element.spacing 24 ]
+                { onChange = DidInputWeaning
+                , options =
+                    [ Input.option SixtyDays (Element.text "60")
+                    , Input.option SeventyDays (Element.text "70")
+                    , Input.option EightyDays (Element.text "80")
+                    , Input.option NinetyDays (Element.text "90")
+                    ]
+                , selected = Just model.weaning
+                , label = Input.labelAbove [] <| Element.text "Sevrage"
+                }
+            , Input.radioRow [ Element.spacing 24 ]
+                { onChange = DidInputSelling
+                , options =
+                    [ Input.option ThreeMonths (Element.text "3 mois")
+                    , Input.option FourMonths (Element.text "4 mois")
+                    , Input.option FiveMonths (Element.text "5 mois")
+                    , Input.option SixMonths (Element.text "6 mois")
+                    , Input.option SevenMonths (Element.text "7 mois")
+                    , Input.option EightMonths (Element.text "8 mois")
+                    ]
+                , selected = Just model.selling
+                , label = Input.labelAbove [] <| Element.text "Vente"
+                }
+            , Input.button []
+                { onPress = Nothing
+                , label =
+                    Element.el
+                        [ Border.width 1
+                        , Element.paddingXY 16 8
+                        ]
+                    <|
+                        Element.text "Générer"
+                }
             ]
-
-
-type alias Batch =
-    { name : String
-    , ewesCount : Int
-    , tupping : Tupping
-    , weaning : Weaning
-    , selling : Selling
-    }
-
-
-type alias Tupping =
-    { date : Posix
-    , duration : TuppingDuration
-    }
-
-
-type TuppingDuration
-    = OneCycle
-    | OneCycleAndAHalf
-    | TwoCycles
-    | ThreeCycles
-
-
-type Weaning
-    = SixtyDays
-    | SeventyDays
-    | EightyDays
-    | NinetyDays
-
-
-weaningToInt : Weaning -> Int
-weaningToInt weaning =
-    case weaning of
-        SixtyDays ->
-            60
-
-        SeventyDays ->
-            70
-
-        EightyDays ->
-            80
-
-        NinetyDays ->
-            90
-
-
-type Selling
-    = ThreeMonths
-    | FourMonths
-    | FiveMonths
-    | SixMonths
-    | SevenMonths
-    | EightMonths
-
-
-sellingToInt : Selling -> Int
-sellingToInt selling =
-    case selling of
-        ThreeMonths ->
-            90
-
-        FourMonths ->
-            120
-
-        FiveMonths ->
-            150
-
-        SixMonths ->
-            180
-
-        SevenMonths ->
-            210
-
-        EightMonths ->
-            240
-
-
-f : Tupping -> Posix
-f { date, duration } =
-    let
-        days =
-            case duration of
-                OneCycle ->
-                    16
-
-                OneCycleAndAHalf ->
-                    24
-
-                TwoCycles ->
-                    32
-
-                ThreeCycles ->
-                    48
-    in
-    Time.posixToMillis date + daysToMillis days |> Time.millisToPosix
-
-
-daysToMillis : Int -> Int
-daysToMillis n =
-    n * 24 * 3600 * 1000
-
-
-step3 : Batch -> Posix
-step3 { tupping } =
-    tupping.date
-
-
-type alias Event =
-    { description : String
-    , date : Posix
-    }
-
-
-run : Batch -> List Event
-run { tupping, weaning, selling } =
-    [ { description = "Augmentation des besoins en alimentation"
-      , date = Time.posixToMillis tupping.date - daysToMillis 30 |> Time.millisToPosix
-      }
-    , { description = "Béliers vasomectisés"
-      , date = Time.posixToMillis tupping.date - daysToMillis 16 |> Time.millisToPosix
-      }
-    , { description = "Mise en lutte"
-      , date = tupping.date
-      }
-    , { description = "Retirer les béliers"
-      , date = f tupping
-      }
-    , { description = "Prévoir échographie dans les 10 jours"
-      , date = Time.posixToMillis (f tupping) + daysToMillis 35 |> Time.millisToPosix
-      }
-    , { description = "Augmentation des besoins en alimentation"
-      , date = Time.posixToMillis tupping.date + daysToMillis 120 |> Time.millisToPosix
-      }
-    , { description = "Début agnelage"
-      , date = Time.posixToMillis tupping.date + daysToMillis 180 |> Time.millisToPosix
-      }
-    , { description = "Fin agnelage"
-      , date = Time.posixToMillis (f tupping) + daysToMillis 180 |> Time.millisToPosix
-      }
-    , { description = "Sevrage agneaux allaitement artificiel"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + 35) |> Time.millisToPosix
-      }
-    , { description = "Sevrage"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + weaningToInt weaning) |> Time.millisToPosix
-      }
-    , { description = "Période de vente Début"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + sellingToInt selling) |> Time.millisToPosix
-      }
-    ]
 
 
 main : Program () Model Msg
