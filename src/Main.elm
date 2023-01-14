@@ -2,8 +2,10 @@ module Main exposing (..)
 
 import Batch exposing (Selling(..), TuppingDuration(..), Weaning(..))
 import Browser
-import Element
+import Element exposing (Element, centerX)
+import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
@@ -95,16 +97,23 @@ view model =
                     , placeholder = Nothing
                     , label = Input.labelAbove [] <| Element.text "Date"
                     }
-                , Input.radioRow [ Element.spacing 24 ]
+                , select
+                    [ Element.width Element.fill
+                    , Border.width 1
+                    , Border.rounded 8
+                    , Element.height (Element.px 30)
+                    , Element.clip
+                    ]
                     { onChange = DidChangeTuppingDuration
                     , options =
-                        [ Input.option OneCycle (Element.text "1")
-                        , Input.option OneCycleAndAHalf (Element.text "1,5")
-                        , Input.option TwoCycles (Element.text "2")
-                        , Input.option ThreeCycles (Element.text "3")
+                        [ OneCycle
+                        , OneCycleAndAHalf
+                        , TwoCycles
+                        , ThreeCycles
                         ]
                     , selected = Just model.tuppingDuration
-                    , label = Input.labelAbove [] <| Element.text "Nombre de cycles"
+                    , label = Element.text "Nombre de cycles"
+                    , toString = Batch.tuppingDurationToString
                     }
                 ]
             , Input.radioRow [ Element.spacing 24 ]
@@ -151,3 +160,51 @@ main =
         , view = view
         , update = update
         }
+
+
+select :
+    List (Element.Attribute msg)
+    ->
+        { onChange : a -> msg
+        , options : List a
+        , selected : Maybe a
+        , label : Element msg
+        , toString : a -> String
+        }
+    -> Element msg
+select attributes { onChange, options, selected, label, toString } =
+    let
+        separator =
+            Element.el
+                [ Element.height Element.fill
+                , Element.width (Element.px 1)
+                , Background.color (Element.rgb255 0 0 0)
+                ]
+                Element.none
+    in
+    Element.column [ Element.width Element.fill, Element.spacing 5 ]
+        [ label
+        , Element.row attributes <| List.intersperse separator <| List.map (option onChange selected toString) options
+        ]
+
+
+option : (value -> msg) -> Maybe value -> (value -> String) -> value -> Element msg
+option onChange selected toString value =
+    let
+        backgroundColor =
+            if selected == Just value then
+                Element.rgb255 200 100 100
+
+            else
+                Element.rgb255 255 255 255
+    in
+    Element.el
+        [ Events.onClick (onChange value)
+        , Background.color backgroundColor
+        , Element.width Element.fill
+        , Element.height Element.fill
+        , Element.pointer
+        ]
+    <|
+        Element.el [ Element.centerX, Element.centerY ] <|
+            Element.text (toString value)

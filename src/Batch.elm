@@ -5,6 +5,7 @@ module Batch exposing
     , TuppingDuration(..)
     , Weaning(..)
     , run
+    , tuppingDurationToString
     )
 
 import Time exposing (Posix)
@@ -30,6 +31,22 @@ type TuppingDuration
     | OneCycleAndAHalf
     | TwoCycles
     | ThreeCycles
+
+
+tuppingDurationToString : TuppingDuration -> String
+tuppingDurationToString duration =
+    case duration of
+        OneCycle ->
+            "1"
+
+        OneCycleAndAHalf ->
+            "1.5"
+
+        TwoCycles ->
+            "2"
+
+        ThreeCycles ->
+            "3"
 
 
 type Weaning
