@@ -5,7 +5,9 @@ module Batch exposing
     , TuppingDuration(..)
     , Weaning(..)
     , run
+    , sellingToString
     , tuppingDurationToString
+    , weaningToInt
     )
 
 import Time exposing (Posix)
@@ -101,6 +103,28 @@ sellingToInt selling =
 
         EightMonths ->
             240
+
+
+sellingToString : Selling -> String
+sellingToString selling =
+    case selling of
+        ThreeMonths ->
+            "3 mois"
+
+        FourMonths ->
+            "4 mois"
+
+        FiveMonths ->
+            "5 mois"
+
+        SixMonths ->
+            "6 mois"
+
+        SevenMonths ->
+            "7 mois"
+
+        EightMonths ->
+            "8 mois"
 
 
 f : Tupping -> Posix

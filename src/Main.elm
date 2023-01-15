@@ -2,20 +2,23 @@ module Main exposing (..)
 
 import Batch exposing (Selling(..), TuppingDuration(..), Weaning(..))
 import Browser
-import Element exposing (Element, centerX)
+import Calendar
+import Date exposing (Date)
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Time exposing (Month(..))
 
 
 type alias Model =
     { name : String
     , count : Int
     , tuppingDuration : TuppingDuration
-    , tuppingDate : String
+    , tuppingDate : Date
     , weaning : Weaning
     , selling : Selling
     }
@@ -26,7 +29,7 @@ init =
     { name = ""
     , count = 1
     , tuppingDuration = OneCycle
-    , tuppingDate = ""
+    , tuppingDate = Date.fromCalendarDate 2023 Jan 15
     , weaning = SixtyDays
     , selling = ThreeMonths
     }
@@ -39,6 +42,9 @@ type Msg
     | DidInputTuppingDate String
     | DidInputWeaning Weaning
     | DidInputSelling Selling
+    | DidChangeTuppingDate Date
+    | ClickedPreviousMonth
+    | ClickedNextMonth
 
 
 update : Msg -> Model -> Model
@@ -67,12 +73,22 @@ update msg model =
         DidInputSelling selling ->
             { model | selling = selling }
 
+        DidChangeTuppingDate date ->
+            { model | tuppingDate = date }
+
+        ClickedPreviousMonth ->
+            model
+
+        ClickedNextMonth ->
+            model
+
 
 view : Model -> Html Msg
 view model =
     Element.layout [ Element.padding 24, Font.size 16 ] <|
         Element.column [ Element.centerX, Element.spacing 32 ]
-            [ Input.text []
+            [ Element.el [ Font.extraBold, Font.size 22 ] <| Element.text "Agnelage"
+            , Input.text []
                 { onChange = DidInputName
                 , text = model.name
                 , placeholder = Nothing
@@ -91,12 +107,12 @@ view model =
                 , Border.width 1
                 ]
                 [ Element.text "Lutte"
-                , Input.text []
-                    { onChange = DidInputTuppingDate
-                    , text = model.tuppingDate
-                    , placeholder = Nothing
-                    , label = Input.labelAbove [] <| Element.text "Date"
-                    }
+                , Calendar.calendar
+                    (Date.fromCalendarDate 2022 Jan 15)
+                    model.tuppingDate
+                    DidChangeTuppingDate
+                    ClickedPreviousMonth
+                    ClickedNextMonth
                 , select
                     [ Element.width Element.fill
                     , Border.width 1
@@ -105,40 +121,37 @@ view model =
                     , Element.clip
                     ]
                     { onChange = DidChangeTuppingDuration
-                    , options =
-                        [ OneCycle
-                        , OneCycleAndAHalf
-                        , TwoCycles
-                        , ThreeCycles
-                        ]
+                    , options = [ OneCycle, OneCycleAndAHalf, TwoCycles, ThreeCycles ]
                     , selected = Just model.tuppingDuration
                     , label = Element.text "Nombre de cycles"
                     , toString = Batch.tuppingDurationToString
                     }
                 ]
-            , Input.radioRow [ Element.spacing 24 ]
+            , select
+                [ Element.width Element.fill
+                , Border.width 1
+                , Border.rounded 8
+                , Element.height (Element.px 30)
+                , Element.clip
+                ]
                 { onChange = DidInputWeaning
-                , options =
-                    [ Input.option SixtyDays (Element.text "60")
-                    , Input.option SeventyDays (Element.text "70")
-                    , Input.option EightyDays (Element.text "80")
-                    , Input.option NinetyDays (Element.text "90")
-                    ]
+                , options = [ SixtyDays, SeventyDays, EightyDays, NinetyDays ]
                 , selected = Just model.weaning
-                , label = Input.labelAbove [] <| Element.text "Sevrage"
+                , label = Element.text "Sevrage"
+                , toString = \weaning -> (Batch.weaningToInt weaning |> String.fromInt) ++ " jours"
                 }
-            , Input.radioRow [ Element.spacing 24 ]
+            , select
+                [ Element.width Element.fill
+                , Border.width 1
+                , Border.rounded 8
+                , Element.height (Element.px 30)
+                , Element.clip
+                ]
                 { onChange = DidInputSelling
-                , options =
-                    [ Input.option ThreeMonths (Element.text "3 mois")
-                    , Input.option FourMonths (Element.text "4 mois")
-                    , Input.option FiveMonths (Element.text "5 mois")
-                    , Input.option SixMonths (Element.text "6 mois")
-                    , Input.option SevenMonths (Element.text "7 mois")
-                    , Input.option EightMonths (Element.text "8 mois")
-                    ]
+                , options = [ ThreeMonths, FourMonths, FiveMonths, SixMonths, SevenMonths, EightMonths ]
                 , selected = Just model.selling
-                , label = Input.labelAbove [] <| Element.text "Vente"
+                , label = Element.text "Vente"
+                , toString = Batch.sellingToString
                 }
             , Input.button []
                 { onPress = Nothing
@@ -204,6 +217,7 @@ option onChange selected toString value =
         , Element.width Element.fill
         , Element.height Element.fill
         , Element.pointer
+        , Element.paddingXY 12 4
         ]
     <|
         Element.el [ Element.centerX, Element.centerY ] <|
