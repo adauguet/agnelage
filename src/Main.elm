@@ -264,7 +264,7 @@ option onChange selected toString value =
         , Element.width Element.fill
         , Element.height Element.fill
         , Element.pointer
-        , Element.paddingXY 12 4
+        , Element.paddingXY 4 0
         ]
     <|
         Element.el [ Element.centerX, Element.centerY ] <|
