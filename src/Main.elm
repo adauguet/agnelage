@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Batch exposing (Selling(..), TuppingDuration(..), Weaning(..))
+import Batch exposing (Event, Selling(..), TuppingDuration(..), Weaning(..))
 import Browser
 import Calendar
 import Date exposing (Date)
@@ -11,6 +11,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Language
 import Time exposing (Month(..))
 
 
@@ -21,6 +22,9 @@ type alias Model =
     , tuppingDate : Date
     , weaning : Weaning
     , selling : Selling
+    , currentMonth : Month
+    , currentYear : Int
+    , events : List Event
     }
 
 
@@ -32,6 +36,9 @@ init =
     , tuppingDate = Date.fromCalendarDate 2023 Jan 15
     , weaning = SixtyDays
     , selling = ThreeMonths
+    , currentMonth = Jan
+    , currentYear = 2023
+    , events = []
     }
 
 
@@ -45,6 +52,7 @@ type Msg
     | DidChangeTuppingDate Date
     | ClickedPreviousMonth
     | ClickedNextMonth
+    | ClickedGenerate
 
 
 update : Msg -> Model -> Model
@@ -77,10 +85,34 @@ update msg model =
             { model | tuppingDate = date }
 
         ClickedPreviousMonth ->
-            model
+            let
+                previous =
+                    Date.fromCalendarDate model.currentYear model.currentMonth 1
+                        |> Date.add Date.Months -1
+            in
+            { model | currentMonth = Date.month previous, currentYear = Date.year previous }
 
         ClickedNextMonth ->
-            model
+            let
+                next =
+                    Date.fromCalendarDate model.currentYear model.currentMonth 1
+                        |> Date.add Date.Months 1
+            in
+            { model | currentMonth = Date.month next, currentYear = Date.year next }
+
+        ClickedGenerate ->
+            { model
+                | events =
+                    Batch.run <|
+                        Batch.make
+                            { name = model.name
+                            , ewesCount = model.count
+                            , tuppingDate = model.tuppingDate
+                            , tuppingDuration = model.tuppingDuration
+                            , weaning = model.weaning
+                            , selling = model.selling
+                            }
+            }
 
 
 view : Model -> Html Msg
@@ -108,11 +140,13 @@ view model =
                 ]
                 [ Element.text "Lutte"
                 , Calendar.calendar
-                    (Date.fromCalendarDate 2022 Jan 15)
-                    model.tuppingDate
-                    DidChangeTuppingDate
-                    ClickedPreviousMonth
-                    ClickedNextMonth
+                    { currentMonth = model.currentMonth
+                    , currentYear = model.currentYear
+                    , currentDate = model.tuppingDate
+                    , onSelectDay = DidChangeTuppingDate
+                    , onClickPreviousMonth = ClickedPreviousMonth
+                    , onClickNextMonth = ClickedNextMonth
+                    }
                 , select
                     [ Element.width Element.fill
                     , Border.width 1
@@ -154,7 +188,7 @@ view model =
                 , toString = Batch.sellingToString
                 }
             , Input.button []
-                { onPress = Nothing
+                { onPress = Just ClickedGenerate
                 , label =
                     Element.el
                         [ Border.width 1
@@ -163,7 +197,16 @@ view model =
                     <|
                         Element.text "Générer"
                 }
+            , Element.column [ Element.spacing 16 ] (List.map eventView model.events)
             ]
+
+
+eventView : Event -> Element msg
+eventView { description, date } =
+    Element.column [ Element.spacing 4 ]
+        [ Element.el [ Font.size 14, Font.color (Element.rgb255 150 150 150) ] <| Element.text <| Date.formatWithLanguage Language.fr "EEEE d MMM YYYY" date
+        , Element.text description
+        ]
 
 
 main : Program () Model Msg
@@ -173,6 +216,10 @@ main =
         , view = view
         , update = update
         }
+
+
+
+-- helpers
 
 
 select :

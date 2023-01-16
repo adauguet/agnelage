@@ -4,26 +4,50 @@ module Batch exposing
     , Selling(..)
     , TuppingDuration(..)
     , Weaning(..)
+    , make
     , run
     , sellingToString
     , tuppingDurationToString
     , weaningToInt
     )
 
-import Time exposing (Posix)
+import Date exposing (Date)
 
 
-type alias Batch =
+type Batch
+    = Batch
+        { name : String
+        , ewesCount : Int
+        , tupping : Tupping
+        , weaning : Weaning
+        , selling : Selling
+        }
+
+
+make :
     { name : String
     , ewesCount : Int
-    , tupping : Tupping
+    , tuppingDate : Date
+    , tuppingDuration : TuppingDuration
     , weaning : Weaning
     , selling : Selling
     }
+    -> Batch
+make { name, ewesCount, tuppingDate, tuppingDuration, weaning, selling } =
+    Batch
+        { name = name
+        , ewesCount = ewesCount
+        , tupping =
+            { date = tuppingDate
+            , duration = tuppingDuration
+            }
+        , weaning = weaning
+        , selling = selling
+        }
 
 
 type alias Tupping =
-    { date : Posix
+    { date : Date
     , duration : TuppingDuration
     }
 
@@ -127,7 +151,7 @@ sellingToString selling =
             "8 mois"
 
 
-f : Tupping -> Posix
+f : Tupping -> Date
 f { date, duration } =
     let
         days =
@@ -144,27 +168,22 @@ f { date, duration } =
                 ThreeCycles ->
                     48
     in
-    Time.posixToMillis date + daysToMillis days |> Time.millisToPosix
-
-
-daysToMillis : Int -> Int
-daysToMillis n =
-    n * 24 * 3600 * 1000
+    Date.add Date.Days days date
 
 
 type alias Event =
     { description : String
-    , date : Posix
+    , date : Date
     }
 
 
 run : Batch -> List Event
-run { tupping, weaning, selling } =
+run (Batch { tupping, weaning, selling }) =
     [ { description = "Augmentation des besoins en alimentation"
-      , date = Time.posixToMillis tupping.date - daysToMillis 30 |> Time.millisToPosix
+      , date = Date.add Date.Days -30 tupping.date
       }
     , { description = "Béliers vasomectisés"
-      , date = Time.posixToMillis tupping.date - daysToMillis 16 |> Time.millisToPosix
+      , date = Date.add Date.Days -16 tupping.date
       }
     , { description = "Mise en lutte"
       , date = tupping.date
@@ -173,24 +192,24 @@ run { tupping, weaning, selling } =
       , date = f tupping
       }
     , { description = "Prévoir échographie dans les 10 jours"
-      , date = Time.posixToMillis (f tupping) + daysToMillis 35 |> Time.millisToPosix
+      , date = Date.add Date.Days 35 (f tupping)
       }
     , { description = "Augmentation des besoins en alimentation"
-      , date = Time.posixToMillis tupping.date + daysToMillis 120 |> Time.millisToPosix
+      , date = Date.add Date.Days 120 tupping.date
       }
     , { description = "Début agnelage"
-      , date = Time.posixToMillis tupping.date + daysToMillis 180 |> Time.millisToPosix
+      , date = Date.add Date.Days 180 tupping.date
       }
     , { description = "Fin agnelage"
-      , date = Time.posixToMillis (f tupping) + daysToMillis 180 |> Time.millisToPosix
+      , date = Date.add Date.Days 180 (f tupping)
       }
     , { description = "Sevrage agneaux allaitement artificiel"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + 35) |> Time.millisToPosix
+      , date = Date.add Date.Days (180 + 35) tupping.date
       }
     , { description = "Sevrage"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + weaningToInt weaning) |> Time.millisToPosix
+      , date = Date.add Date.Days (180 + weaningToInt weaning) tupping.date
       }
     , { description = "Période de vente Début"
-      , date = Time.posixToMillis tupping.date + daysToMillis (180 + sellingToInt selling) |> Time.millisToPosix
+      , date = Date.add Date.Days (180 + sellingToInt selling) tupping.date
       }
     ]

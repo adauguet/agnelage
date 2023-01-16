@@ -23,31 +23,40 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Language
 import Time exposing (Month(..), Weekday(..))
 
 
-calendar : Date -> Date -> (Date -> msg) -> msg -> msg -> Element msg
-calendar currentMonth currentDate onSelectDay onClickPreviousMonth onClickNextMonth =
+calendar :
+    { currentMonth : Month
+    , currentYear : Int
+    , currentDate : Date
+    , onSelectDay : Date -> msg
+    , onClickPreviousMonth : msg
+    , onClickNextMonth : msg
+    }
+    -> Element msg
+calendar { currentMonth, currentYear, currentDate, onSelectDay, onClickPreviousMonth, onClickNextMonth } =
     let
         firstDayOfTheMonth =
-            Date.floor Date.Month currentDate
+            Date.fromCalendarDate currentYear currentMonth 1
 
-        lastDayOfTheMonth =
-            Date.ceiling Date.Month currentDate |> Date.add Date.Days -1
+        firstDayOfNextMonth =
+            Date.add Date.Months 1 firstDayOfTheMonth
 
         dayViews =
-            Date.range Date.Day 1 firstDayOfTheMonth lastDayOfTheMonth
+            Date.range Date.Day 1 firstDayOfTheMonth firstDayOfNextMonth
                 |> List.map (\date -> dayTile currentDate date onSelectDay)
 
         weeks =
-            (List.repeat ((Date.weekdayToNumber <| Date.weekday firstDayOfTheMonth) - 1) emptyTile ++ dayViews ++ List.repeat ((Date.weekdayToNumber <| Date.weekday lastDayOfTheMonth) - 1) emptyTile)
+            (List.repeat ((Date.weekdayToNumber <| Date.weekday firstDayOfTheMonth) - 1) emptyTile ++ dayViews ++ List.repeat ((Date.weekdayToNumber <| Date.weekday firstDayOfNextMonth) - 1) emptyTile)
                 |> chunks 7
                 |> List.map (row [ width fill ])
     in
     column
         [ spacing 20
         ]
-        [ monthHeader currentMonth onClickPreviousMonth onClickNextMonth
+        [ monthHeader currentMonth currentYear onClickPreviousMonth onClickNextMonth
         , column [ width fill, spacing 5 ]
             [ weekdaysHeader
             , column [ width fill ] weeks
@@ -55,138 +64,17 @@ calendar currentMonth currentDate onSelectDay onClickPreviousMonth onClickNextMo
         ]
 
 
-monthHeader : Date -> msg -> msg -> Element msg
-monthHeader date onClickPreviousMonth onClickNextMonth =
+monthHeader : Month -> Int -> msg -> msg -> Element msg
+monthHeader month year onClickPreviousMonth onClickNextMonth =
     row
         [ width fill ]
         [ monthHeaderButton "<" onClickPreviousMonth
-        , toMonthYear date
+        , (Language.fr.monthName month ++ " " ++ String.fromInt year)
             |> text
             |> el [ centerY ]
             |> el [ Font.heavy, height fill, centerX ]
         , monthHeaderButton ">" onClickNextMonth
         ]
-
-
-fr : Date.Language
-fr =
-    { monthName =
-        \month ->
-            case month of
-                Jan ->
-                    "Janvier"
-
-                Feb ->
-                    "Février"
-
-                Mar ->
-                    "Mars"
-
-                Apr ->
-                    "Avril"
-
-                May ->
-                    "Mai"
-
-                Jun ->
-                    "Juin"
-
-                Jul ->
-                    "Juillet"
-
-                Aug ->
-                    "Août"
-
-                Sep ->
-                    "Septembre"
-
-                Oct ->
-                    "Octobre"
-
-                Nov ->
-                    "Novembre"
-
-                Dec ->
-                    "Décembre"
-    , monthNameShort =
-        \month ->
-            case month of
-                Jan ->
-                    "Janvier"
-
-                Feb ->
-                    "Février"
-
-                Mar ->
-                    "Mars"
-
-                Apr ->
-                    "Avril"
-
-                May ->
-                    "Mai"
-
-                Jun ->
-                    "Juin"
-
-                Jul ->
-                    "Juillet"
-
-                Aug ->
-                    "Août"
-
-                Sep ->
-                    "Septembre"
-
-                Oct ->
-                    "Octobre"
-
-                Nov ->
-                    "Novembre"
-
-                Dec ->
-                    "Décembre"
-    , weekdayName =
-        \weekday ->
-            case weekday of
-                Mon ->
-                    "Lundi"
-
-                Tue ->
-                    "Mardi"
-
-                Wed ->
-                    "Mercredi"
-
-                Thu ->
-                    "Jeudi"
-
-                Fri ->
-                    "Vendredi"
-
-                Sat ->
-                    "Samedi"
-
-                Sun ->
-                    "Dimanche"
-    , weekdayNameShort = weekdayToString
-    , dayWithSuffix =
-        \day ->
-            case day of
-                1 ->
-                    "1er"
-
-                2 ->
-                    "2nd"
-
-                n ->
-                    String.fromInt n ++ "ème"
-    }
-
-
-toMonthYear : Date -> String
-toMonthYear date =
-    Date.formatWithLanguage fr "MMMM yyyy" date
 
 
 monthHeaderButton : String -> msg -> Element msg
@@ -199,12 +87,7 @@ monthHeaderButton string msg =
         , mouseOver [ Background.color gray ]
         ]
         { onPress = Just msg
-        , label =
-            el
-                [ centerX
-                , centerY
-                ]
-                (text string)
+        , label = el [ centerX, centerY ] <| text string
         }
 
 
@@ -222,7 +105,7 @@ emptyTile =
 weekdayTile : Weekday -> Element msg
 weekdayTile weekday =
     weekday
-        |> weekdayToString
+        |> Language.fr.weekdayNameShort
         |> text
         |> el [ centerX, centerY ]
         |> el [ width fill, height fill ]
@@ -272,38 +155,16 @@ chunks count list =
             take :: chunks count drop
 
 
+blue : Element.Color
 blue =
     rgb255 0 0 255
 
 
+white : Element.Color
 white =
     rgb255 255 255 255
 
 
+gray : Element.Color
 gray =
     rgb255 150 150 150
-
-
-weekdayToString : Weekday -> String
-weekdayToString weekday =
-    case weekday of
-        Mon ->
-            "Lu"
-
-        Tue ->
-            "Ma"
-
-        Wed ->
-            "Me"
-
-        Thu ->
-            "Je"
-
-        Fri ->
-            "Ve"
-
-        Sat ->
-            "Sa"
-
-        Sun ->
-            "Di"
