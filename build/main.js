@@ -5672,6 +5672,7 @@ var $author$project$Batch$run = function (_v0) {
 	var tupping = _v0.b5;
 	var weaning = _v0.a8;
 	var selling = _v0.a4;
+	var gestation = 150;
 	return _List_fromArray(
 		[
 			{
@@ -5700,26 +5701,26 @@ var $author$project$Batch$run = function (_v0) {
 			v: 'Augmentation des besoins en alimentation'
 		},
 			{
-			f: A3($justinmimbs$date$Date$add, 3, 180, tupping.f),
+			f: A3($justinmimbs$date$Date$add, 3, gestation, tupping.f),
 			v: 'Début agnelage'
 		},
 			{
 			f: A3(
 				$justinmimbs$date$Date$add,
 				3,
-				180,
+				gestation,
 				$author$project$Batch$f(tupping)),
 			v: 'Fin agnelage'
 		},
 			{
-			f: A3($justinmimbs$date$Date$add, 3, 180 + 35, tupping.f),
+			f: A3($justinmimbs$date$Date$add, 3, gestation + 35, tupping.f),
 			v: 'Sevrage agneaux allaitement artificiel'
 		},
 			{
 			f: A3(
 				$justinmimbs$date$Date$add,
 				3,
-				180 + $author$project$Batch$weaningToInt(weaning),
+				gestation + $author$project$Batch$weaningToInt(weaning),
 				tupping.f),
 			v: 'Sevrage'
 		},
@@ -5727,7 +5728,7 @@ var $author$project$Batch$run = function (_v0) {
 			f: A3(
 				$justinmimbs$date$Date$add,
 				3,
-				180 + $author$project$Batch$sellingToInt(selling),
+				gestation + $author$project$Batch$sellingToInt(selling),
 				tupping.f),
 			v: 'Période de vente Début'
 		}
