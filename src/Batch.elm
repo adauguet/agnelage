@@ -179,6 +179,10 @@ type alias Event =
 
 run : Batch -> List Event
 run (Batch { tupping, weaning, selling }) =
+    let
+        gestation =
+            150
+    in
     [ { description = "Augmentation des besoins en alimentation"
       , date = Date.add Date.Days -30 tupping.date
       }
@@ -198,18 +202,18 @@ run (Batch { tupping, weaning, selling }) =
       , date = Date.add Date.Days 120 tupping.date
       }
     , { description = "Début agnelage"
-      , date = Date.add Date.Days 180 tupping.date
+      , date = Date.add Date.Days gestation tupping.date
       }
     , { description = "Fin agnelage"
-      , date = Date.add Date.Days 180 (f tupping)
+      , date = Date.add Date.Days gestation (f tupping)
       }
     , { description = "Sevrage agneaux allaitement artificiel"
-      , date = Date.add Date.Days (180 + 35) tupping.date
+      , date = Date.add Date.Days (gestation + 35) tupping.date
       }
     , { description = "Sevrage"
-      , date = Date.add Date.Days (180 + weaningToInt weaning) tupping.date
+      , date = Date.add Date.Days (gestation + weaningToInt weaning) tupping.date
       }
     , { description = "Période de vente Début"
-      , date = Date.add Date.Days (180 + sellingToInt selling) tupping.date
+      , date = Date.add Date.Days (gestation + sellingToInt selling) tupping.date
       }
     ]
