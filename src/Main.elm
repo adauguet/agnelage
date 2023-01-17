@@ -1,6 +1,6 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Batch exposing (Event, Selling(..), TuppingDuration(..), Weaning(..))
+import Batch exposing (Event)
 import Browser
 import Calendar
 import Date exposing (Date)
@@ -13,14 +13,17 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Language
+import Selling exposing (Selling(..))
 import Time exposing (Month(..))
+import Tupping exposing (Duration(..))
 import Url.Builder
+import Weaning exposing (Weaning(..))
 
 
 type alias Model =
     { name : String
     , count : Int
-    , tuppingDuration : TuppingDuration
+    , tuppingDuration : Duration
     , tuppingDate : Date
     , weaning : Weaning
     , selling : Selling
@@ -47,7 +50,7 @@ init =
 type Msg
     = DidInputName String
     | DidInputCount String
-    | DidChangeTuppingDuration TuppingDuration
+    | DidChangeTuppingDuration Duration
     | DidInputTuppingDate String
     | DidInputWeaning Weaning
     | DidInputSelling Selling
@@ -160,7 +163,7 @@ view model =
                     , options = [ OneCycle, OneCycleAndAHalf, TwoCycles, ThreeCycles ]
                     , selected = Just model.tuppingDuration
                     , label = Element.text "Nombre de cycles"
-                    , toString = Batch.tuppingDurationToString
+                    , toString = Tupping.toString
                     }
                 ]
             , select
@@ -174,7 +177,7 @@ view model =
                 , options = [ SixtyDays, SeventyDays, EightyDays, NinetyDays ]
                 , selected = Just model.weaning
                 , label = Element.text "Sevrage"
-                , toString = \weaning -> (Batch.weaningToInt weaning |> String.fromInt) ++ " jours"
+                , toString = \weaning -> (Weaning.toInt weaning |> String.fromInt) ++ " jours"
                 }
             , select
                 [ Element.width Element.fill
@@ -187,7 +190,7 @@ view model =
                 , options = [ ThreeMonths, FourMonths, FiveMonths, SixMonths, SevenMonths, EightMonths ]
                 , selected = Just model.selling
                 , label = Element.text "Vente"
-                , toString = Batch.sellingToString
+                , toString = Selling.sellingToString
                 }
             , Input.button []
                 { onPress = Just ClickedGenerate
@@ -204,9 +207,20 @@ view model =
 
 
 eventView : String -> Event -> Element Msg
-eventView name ({ description, date } as event) =
+eventView name ({ description, from, to } as event) =
+    let
+        format =
+            Date.formatWithLanguage Language.fr "d MMMM YYYY"
+    in
     Element.column [ Element.spacing 4 ]
-        [ Element.el [ Font.size 14, Font.color (Element.rgb255 150 150 150) ] <| Element.text <| Date.formatWithLanguage Language.fr "EEEE d MMM YYYY" date
+        [ Element.el [ Font.size 14, Font.color (Element.rgb255 150 150 150) ] <|
+            Element.text <|
+                case to of
+                    Just to_ ->
+                        "du " ++ format from ++ " au " ++ format to_
+
+                    Nothing ->
+                        format from
         , Element.text description
         , Element.newTabLink
             [ Font.size 14
@@ -226,7 +240,7 @@ eventView name ({ description, date } as event) =
 
 
 makeAddToCalendarLink : String -> Event -> String
-makeAddToCalendarLink name { description, date } =
+makeAddToCalendarLink name { description, from, to } =
     let
         format =
             Date.format "yyyyMMdd"
@@ -240,7 +254,7 @@ makeAddToCalendarLink name { description, date } =
 
             else
                 name ++ " | " ++ description
-        , Url.Builder.string "dates" <| format date ++ "/" ++ format (Date.add Date.Days 1 date)
+        , Url.Builder.string "dates" <| format from ++ "/" ++ format (to |> Maybe.withDefault from |> Date.add Date.Days 1)
         ]
 
 
