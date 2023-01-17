@@ -11,8 +11,10 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Language
 import Time exposing (Month(..))
+import Url.Builder
 
 
 type alias Model =
@@ -197,15 +199,42 @@ view model =
                     <|
                         Element.text "Générer"
                 }
-            , Element.column [ Element.spacing 16 ] (List.map eventView model.events)
+            , Element.column [ Element.spacing 16 ] (List.map (eventView model.name) model.events)
             ]
 
 
-eventView : Event -> Element msg
-eventView { description, date } =
+eventView : String -> Event -> Element Msg
+eventView name ({ description, date } as event) =
     Element.column [ Element.spacing 4 ]
         [ Element.el [ Font.size 14, Font.color (Element.rgb255 150 150 150) ] <| Element.text <| Date.formatWithLanguage Language.fr "EEEE d MMM YYYY" date
         , Element.text description
+        , Element.newTabLink [ Font.size 14, Font.color (Element.rgb255 200 100 100) ]
+            { url = makeAddToCalendarLink name event
+            , label =
+                Element.row [ Element.spacing 4 ]
+                    [ Element.el [] <| Element.html <| Html.i [ Html.Attributes.class "fas fa-calendar-plus" ] []
+                    , Element.text "Ajouter au calendrier"
+                    ]
+            }
+        ]
+
+
+makeAddToCalendarLink : String -> Event -> String
+makeAddToCalendarLink name { description, date } =
+    let
+        format =
+            Date.format "yyyyMMdd"
+    in
+    Url.Builder.crossOrigin "https://calendar.google.com"
+        [ "calendar", "render" ]
+        [ Url.Builder.string "action" "TEMPLATE"
+        , Url.Builder.string "text" <|
+            if String.isEmpty name then
+                description
+
+            else
+                name ++ " | " ++ description
+        , Url.Builder.string "dates" <| format date ++ "/" ++ format (Date.add Date.Days 1 date)
         ]
 
 
