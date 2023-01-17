@@ -4,7 +4,7 @@ import Batch exposing (Event)
 import Browser
 import Calendar
 import Date exposing (Date)
-import Element exposing (Element)
+import Element exposing (Element, inFront)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -30,7 +30,12 @@ type alias Model =
     , currentMonth : Month
     , currentYear : Int
     , events : List Event
+    , modal : Maybe Modal
     }
+
+
+type Modal
+    = TuppingDateModal
 
 
 init : Model
@@ -44,6 +49,7 @@ init =
     , currentMonth = Jan
     , currentYear = 2023
     , events = []
+    , modal = Nothing
     }
 
 
@@ -58,6 +64,7 @@ type Msg
     | ClickedPreviousMonth
     | ClickedNextMonth
     | ClickedGenerate
+    | OpenModal
 
 
 update : Msg -> Model -> Model
@@ -87,7 +94,7 @@ update msg model =
             { model | selling = selling }
 
         DidChangeTuppingDate date ->
-            { model | tuppingDate = date }
+            { model | tuppingDate = date, modal = Nothing }
 
         ClickedPreviousMonth ->
             let
@@ -119,10 +126,13 @@ update msg model =
                             }
             }
 
+        OpenModal ->
+            { model | modal = Just TuppingDateModal }
+
 
 view : Model -> Html Msg
 view model =
-    Element.layout [ Element.padding 24, Font.size 16 ] <|
+    Element.layout [ Element.padding 24, Font.size 16, inFront (modalView model) ] <|
         Element.column [ Element.centerX, Element.spacing 32 ]
             [ Element.el [ Font.extraBold, Font.size 22 ] <| Element.text "Agnelage"
             , Input.text []
@@ -140,22 +150,26 @@ view model =
             , Element.column
                 [ Element.width Element.fill
                 , Element.paddingXY 16 16
-                , Element.spacing 32
+                , Element.spacing 24
                 , Border.width 1
+                , Border.rounded 3
+                , Border.color (Element.rgb255 186 189 182)
                 ]
-                [ Element.text "Lutte"
-                , Calendar.calendar
-                    { currentMonth = model.currentMonth
-                    , currentYear = model.currentYear
-                    , currentDate = model.tuppingDate
-                    , onSelectDay = DidChangeTuppingDate
-                    , onClickPreviousMonth = ClickedPreviousMonth
-                    , onClickNextMonth = ClickedNextMonth
-                    }
+                [ Element.column [ Element.spacing 5 ]
+                    [ Element.el [ Font.heavy ] <| Element.text "Lutte"
+                    , Input.button [ Border.width 1, Element.padding 10, Border.rounded 5 ]
+                        { onPress = Just OpenModal
+                        , label =
+                            Element.row [ Element.spacing 5 ]
+                                [ icon "fas fa-calendar-alt"
+                                , Element.text <| Date.formatWithLanguage Language.fr "d MMMM yyyy" model.tuppingDate
+                                ]
+                        }
+                    ]
                 , select
                     [ Element.width Element.fill
                     , Border.width 1
-                    , Border.rounded 8
+                    , Border.rounded 5
                     , Element.height (Element.px 30)
                     , Element.clip
                     ]
@@ -169,7 +183,7 @@ view model =
             , select
                 [ Element.width Element.fill
                 , Border.width 1
-                , Border.rounded 8
+                , Border.rounded 5
                 , Element.height (Element.px 30)
                 , Element.clip
                 ]
@@ -182,7 +196,7 @@ view model =
             , select
                 [ Element.width Element.fill
                 , Border.width 1
-                , Border.rounded 8
+                , Border.rounded 5
                 , Element.height (Element.px 30)
                 , Element.clip
                 ]
@@ -197,10 +211,11 @@ view model =
                 , label =
                     Element.el
                         [ Border.width 1
-                        , Element.paddingXY 16 8
+                        , Border.rounded 5
+                        , Element.paddingXY 20 10
                         ]
                     <|
-                        Element.text "Générer"
+                        Element.text "Calculer"
                 }
             , Element.column [ Element.spacing 16 ] (List.map (eventView model.name) model.events)
             ]
@@ -232,11 +247,16 @@ eventView name ({ description, from, to } as event) =
             { url = makeAddToCalendarLink name event
             , label =
                 Element.row [ Element.spacing 4 ]
-                    [ Element.el [] <| Element.html <| Html.i [ Html.Attributes.class "fas fa-calendar-plus" ] []
+                    [ icon "fas fa-calendar-plus"
                     , Element.text "Ajouter au calendrier"
                     ]
             }
         ]
+
+
+icon : String -> Element msg
+icon id =
+    Element.el [] <| Element.html <| Html.i [ Html.Attributes.class id ] []
 
 
 makeAddToCalendarLink : String -> Event -> String
@@ -256,6 +276,27 @@ makeAddToCalendarLink name { description, from, to } =
                 name ++ " | " ++ description
         , Url.Builder.string "dates" <| format from ++ "/" ++ format (to |> Maybe.withDefault from |> Date.add Date.Days 1)
         ]
+
+
+modalView : Model -> Element Msg
+modalView model =
+    case model.modal of
+        Just modal ->
+            Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 200 200 200 0.8) ] <|
+                Element.el [ Element.centerX, Element.centerY, Background.color (Element.rgb255 255 255 255), Element.padding 20, Border.rounded 5 ] <|
+                    case modal of
+                        TuppingDateModal ->
+                            Calendar.calendar
+                                { currentMonth = model.currentMonth
+                                , currentYear = model.currentYear
+                                , currentDate = model.tuppingDate
+                                , onSelectDay = DidChangeTuppingDate
+                                , onClickPreviousMonth = ClickedPreviousMonth
+                                , onClickNextMonth = ClickedNextMonth
+                                }
+
+        Nothing ->
+            Element.none
 
 
 main : Program () Model Msg
