@@ -208,7 +208,13 @@ eventView name ({ description, date } as event) =
     Element.column [ Element.spacing 4 ]
         [ Element.el [ Font.size 14, Font.color (Element.rgb255 150 150 150) ] <| Element.text <| Date.formatWithLanguage Language.fr "EEEE d MMM YYYY" date
         , Element.text description
-        , Element.newTabLink [ Font.size 14, Font.color (Element.rgb255 200 100 100) ]
+        , Element.newTabLink
+            [ Font.size 14
+            , Font.color (Element.rgb255 200 100 100)
+            , Border.width 1
+            , Border.rounded 5
+            , Element.paddingXY 5 5
+            ]
             { url = makeAddToCalendarLink name event
             , label =
                 Element.row [ Element.spacing 4 ]
